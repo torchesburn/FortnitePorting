@@ -14,7 +14,7 @@
         <avalonia:AnimatableTabControl Margin="0 8" TabStripPlacement="Left" OnContentChanged="OnTabChanged">
             <TabItem>
                 <TabItem.Header>
-                    <controls:MaterialIconText Text="Home    " Icon="ViewDashboard" />
+                    <controls:MaterialIconText Text="|INTRACT|INTRACT|INTRACT|" Icon="ViewDashboard" />
                 </TabItem.Header>
                 <views:HomeView />
             </TabItem>

@@ -71,7 +71,7 @@
                                     <Svg Path="/Assets/Icons/KoFi.svg" Width="16" Height="16" Margin="0 0 8 0"
                                          Stretch="UniformToFill" HorizontalAlignment="Center"
                                          VerticalAlignment="Center" />
-                                    <TextBlock Text="Support the Project" />
+                                    <TextBlock Text="|INTRACT|INTRACT|INTRACT|" />
                                 </StackPanel>
                             </Button>
                             <Button Command="{Binding OpenWikiCommand}" Margin="{ext:Space 0.25}">

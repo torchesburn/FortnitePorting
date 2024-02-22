@@ -483,7 +483,30 @@ public partial class AssetsViewModel : ViewModelBase
         };
 
         SetLoader(EAssetType.Outfit);
-        TaskService.Run(async () => { await CurrentLoader!.Load(); });
+        TaskService.Run(async () => { 
+            await CurrentLoader!.Load(); 
+        });
+        await ExportSampleAssets();
+    }
+
+    private async Task WaitForPropsAndExport()
+    {
+        // Find the prop loader
+        var propLoader = Loaders.FirstOrDefault(x => x.Type == EAssetType.Prop);
+        if (propLoader == null)
+        {
+            Log.Error("Prop loader not found.");
+            return;
+        }
+
+        // Wait for the prop loader to finish loading
+        while (!propLoader.FinishedLoading)
+        {
+            await Task.Delay(1000); // Check every second
+        }
+
+        // Once props are loaded, prepare and export the first 10 props
+        await PrepareAndExportFirst10Props();
     }
 
     public void SetLoader(EAssetType assetType)
@@ -515,14 +538,96 @@ public partial class AssetsViewModel : ViewModelBase
         foreach (var currentAsset in CurrentAssets) currentAsset.AssetItem.Favorite();
     }
 
+    public async Task ExportSampleAssets()
+    {
+        var assetType = EAssetType.Outfit; // Example: Change this to the type you want to test
+        var loader = Loaders.FirstOrDefault(x => x.Type == assetType);
+        if (loader == null || !loader.FinishedLoading)
+        {
+            Log.Error($"{assetType} not loaded or loader not found.");
+            return;
+        }
+
+        while (!loader.FinishedLoading)
+        {
+            await Task.Delay(1000); // Check every second
+        }
+
+        var assetsToExport = loader.Source.Items.Take(10).ToList();
+        Log.Information($"Attempting to export {assetsToExport.Count} assets of type {assetType}.");
+
+        if (!assetsToExport.Any())
+        {
+            Log.Information("No assets found to export.");
+            return;
+        }
+
+        var exportOptions = assetsToExport.Select(asset => new AssetOptions(asset)).ToList();
+        CurrentAssets = new ObservableCollection<AssetOptions>(exportOptions);
+
+        // Now, call the existing Export method.
+        await Export();
+    }
+
+    public async Task PrepareAndExportFirst10Props()
+    {
+        // Find the loader responsible for props.
+        var propLoader = Loaders.FirstOrDefault(x => x.Type == EAssetType.Prop);
+        if (propLoader == null || !propLoader.FinishedLoading)
+        {
+            Log.Error("Props not loaded or prop loader not found.");
+            return;
+        }
+
+        var first10Props = new ObservableCollection<AssetOptions>(
+            propLoader.Source.Items.Take(10)
+            .Select(assetItem => new AssetOptions(assetItem)) // Correctly passing assetItem to the constructor
+            .ToList());
+
+        if (first10Props.Any())
+        {
+            // Update CurrentAssets with the first 10 props to be ready for export.
+            CurrentAssets = first10Props;
+
+            // Now, call the existing Export method.
+            await Export();
+        }
+        else
+        {
+            Log.Information("No props found to export.");
+        }
+    }
+
     [RelayCommand]
     public async Task Export()
     {
-        ExportChunks = 1;
-        ExportProgress = 0;
-        IsExporting = true;
-        await ExportService.ExportAsync(CurrentAssets.ToList(), ExportType);
-        IsExporting = false;
+        var outfitLoader = Loaders.FirstOrDefault(x => x.Type == EAssetType.Outfit);
+        if (outfitLoader != null && outfitLoader.FinishedLoading)
+        {
+            var outfitsToExport = outfitLoader.Source.Items.Take(10).ToList();
+
+            if (outfitsToExport.Any())
+            {
+                // Convert AssetItem objects to AssetOptions
+                var exportOptions = outfitsToExport.Select(assetItem => new AssetOptions(assetItem)).ToList();
+
+                ExportChunks = 1;
+                ExportProgress = 0;
+                IsExporting = true;
+
+                await ExportService.ExportAsync(exportOptions, ExportType);
+
+                IsExporting = false;
+            }
+            else
+            {
+                Log.Information("No outfits found to export.");
+            }
+        }
+        else
+        {
+            Log.Error("Outfit loader not found or outfits are not loaded yet.");
+        }
     }
 
     // scuffed fix to get filter to update

@@ -21,9 +21,9 @@
             <RowDefinition Height="7*" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Grid.Column="1" Grid.Row="1" Text="Welcome to FortnitePorting!" FontWeight="SemiBold" FontSize="42"
+        <TextBlock Grid.Column="1" Grid.Row="1" Text="Welcome to INTRACT" FontWeight="SemiBold" FontSize="42"
                    HorizontalAlignment="Center" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Grid.Row="2" Text="Please select your Fortnite installation type to get started."
+        <TextBlock Grid.Column="1" Grid.Row="2" Text="You don't have to do anything. Sit back, relax and fugeddaboutit"
                    Opacity="0.75" HorizontalAlignment="Center" VerticalAlignment="Center" />
         <controls:GroupBox Grid.Column="1" Grid.Row="4">
             <avalonia:AnimatableTabControl SelectionChanged="OnTabSelectionChanged">
