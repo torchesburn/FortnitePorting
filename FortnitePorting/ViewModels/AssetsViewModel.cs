@@ -152,7 +152,7 @@ public partial class AssetsViewModel : ViewModelBase
                         "/FigureCosmetics/DataTables/DT_FigureConversion",
                         "/FigureCosmetics/DataTables/DT_DefaultFigures"
                     };
-
+                    Console.WriteLine("INIT 1");
                     var dataTables = new List<UDataTable>();
                     foreach (var conversionTable in figureConversionTables)
                     {
@@ -173,6 +173,7 @@ public partial class AssetsViewModel : ViewModelBase
                             var asset = await CUE4ParseVM.Provider.LoadObjectAsync(data.ObjectPath);
                             var displayName = asset.GetAnyOrDefault<FText?>("DisplayName", "ItemName") ?? new FText(asset.Name);
                             var rarity = asset.GetOrDefault("Rarity", EFortRarity.Uncommon);
+                            Console.WriteLine("INIT 2");
 
                             if (!mergedDataTableRows.TryGetDataTableRow(asset.Name, StringComparison.OrdinalIgnoreCase, out var characterData)) continue;
 
@@ -188,7 +189,7 @@ public partial class AssetsViewModel : ViewModelBase
                             
                             await TaskService.RunDispatcherAsync(() => loader.Source.Add(new AssetItem(customizableObject, previewImage, displayName.Text, loader.Type, rarityOverride: rarity)), DispatcherPriority.Background);
                             loader.Loaded++;
-                            
+                            Console.WriteLine("INIT 3");
                         }
                         catch (Exception e)
                         {
@@ -299,6 +300,8 @@ public partial class AssetsViewModel : ViewModelBase
                 HidePredicate = (loader, asset, name) =>
                 {
                     if (!AppSettings.Current.FilterItems) return false;
+                    Console.WriteLine("INIT ITEM");
+
                     var path = asset.GetPathName();
                     var mappings = AppSettings.Current.ItemMeshMappings.GetOrAdd(name, () => new Dictionary<string, string>());
                     if (mappings.TryGetValue(path, out var meshPath))
@@ -405,6 +408,7 @@ public partial class AssetsViewModel : ViewModelBase
                 {
                     var weaponModTable = await CUE4ParseVM.Provider.LoadObjectAsync<UDataTable>("WeaponMods/DataTables/WeaponModOverrideData");
                     var assets = CUE4ParseVM.AssetRegistry.Where(data => loader.Classes.Contains(data.AssetClass.Text)).ToList();
+                    Console.WriteLine("WEAPON MOD");
 
                     loader.Total = assets.Count;
                     foreach (var data in assets)
@@ -484,9 +488,9 @@ public partial class AssetsViewModel : ViewModelBase
 
         SetLoader(EAssetType.Outfit);
         TaskService.Run(async () => { 
-            await CurrentLoader!.Load(); 
+            await CurrentLoader!.Load();
+            await ExportSampleAssets();
         });
-        await ExportSampleAssets();
     }
 
     private async Task WaitForPropsAndExport()
