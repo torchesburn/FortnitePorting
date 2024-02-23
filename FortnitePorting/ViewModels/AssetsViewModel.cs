@@ -128,6 +128,7 @@ public partial class AssetsViewModel : ViewModelBase
 
     public override async Task Initialize()
     {
+        Console.WriteLine("hello my name is initialize");
         Loaders = new List<AssetLoader>
         {
             new(EAssetType.Outfit)
@@ -136,6 +137,7 @@ public partial class AssetsViewModel : ViewModelBase
                 Filters = new[] { "_NPC", "_TBD", "CID_VIP", "_Creative", "_SG" },
                 IconHandler = asset =>
                 {
+                    // Console.WriteLine("Loading icons");
                     asset.TryGetValue(out UTexture2D? previewImage, "SmallPreviewImage", "LargePreviewImage");
                     if (asset.TryGetValue(out UObject heroDef, "HeroDefinition")) heroDef.TryGetValue(out previewImage, "SmallPreviewImage", "LargePreviewImage");
 
@@ -146,6 +148,8 @@ public partial class AssetsViewModel : ViewModelBase
             {
                 CustomLoadingHandler = async loader =>
                 {
+                    Console.WriteLine("Starting custom loading handler");
+
                     var figureConversionTables = new[]
                     {
                         "/FigureCosmetics/DataTables/DT_FigurePHConversion",
@@ -156,20 +160,25 @@ public partial class AssetsViewModel : ViewModelBase
                     var dataTables = new List<UDataTable>();
                     foreach (var conversionTable in figureConversionTables)
                     {
+                        Console.WriteLine($"Loading conversion table: {conversionTable}");
                         dataTables.Add(await CUE4ParseVM.Provider.LoadObjectAsync<UDataTable>(conversionTable));
                     }
-                    
+                    Console.WriteLine("Finished loading conversion tables");
+
                     var mergedDataTableRows = dataTables
                         .SelectMany(table => table.RowMap)
                         .ToDictionary(pair => pair.Key, pair => pair.Value);
 
                     var assets = CUE4ParseVM.AssetRegistry.Where(data => data.AssetClass.Text.Equals("AthenaCharacterItemDefinition")).ToArray();
                     loader.Total = assets.Length;
+                    Console.WriteLine($"Total assets to load: {loader.Total}");
+
                     foreach (var data in assets)
                     {
                         await loader.Pause.WaitIfPaused();
                         try
                         {
+                            Console.WriteLine($"Loading asset: {data.ObjectPath}");
                             var asset = await CUE4ParseVM.Provider.LoadObjectAsync(data.ObjectPath);
                             var displayName = asset.GetAnyOrDefault<FText?>("DisplayName", "ItemName") ?? new FText(asset.Name);
                             var rarity = asset.GetOrDefault("Rarity", EFortRarity.Uncommon);
@@ -188,15 +197,16 @@ public partial class AssetsViewModel : ViewModelBase
                             
                             await TaskService.RunDispatcherAsync(() => loader.Source.Add(new AssetItem(customizableObject, previewImage, displayName.Text, loader.Type, rarityOverride: rarity)), DispatcherPriority.Background);
                             loader.Loaded++;
-                            
+                            Console.WriteLine($"Loaded asset: {data.ObjectPath}");
                         }
                         catch (Exception e)
                         {
-                            Log.Error("{0}", e);
+                            Console.WriteLine($"Error loading asset: {e}");
                         }
                     }
 
                     loader.Loaded = loader.Total;
+                    Console.WriteLine("Finished custom loading handler");
                 }
             },
             new(EAssetType.Backpack)
@@ -210,6 +220,7 @@ public partial class AssetsViewModel : ViewModelBase
                 Filters = new[] { "Dev_", "TBD_" },
                 IconHandler = asset =>
                 {
+                    Console.WriteLine("loading PickAxe");
                     asset.TryGetValue(out UTexture2D? previewImage, "SmallPreviewImage", "LargePreviewImage");
                     if (asset.TryGetValue(out UObject heroDef, "WeaponDefinition")) heroDef.TryGetValue(out previewImage, "SmallPreviewImage", "LargePreviewImage");
 
@@ -257,16 +268,19 @@ public partial class AssetsViewModel : ViewModelBase
                 Classes = new[] { "FortPlaysetPropItemDefinition" },
                 HidePredicate = (loader, asset, name) =>
                 {
+                    Console.WriteLine("Loading Props");
                     if (!AppSettings.Current.FilterProps) return false;
 
                     var path = asset.GetPathName();
+                    Console.WriteLine("Loading Props 2");
                     if (AppSettings.Current.HiddenPropPaths.Contains(path)) return true;
                     if (loader.LoadedAssetsForFiltering.Contains(name))
                     {
+                        Console.WriteLine("Loading Props 3");
                         AppSettings.Current.HiddenPropPaths.Add(path);
                         return true;
                     }
-
+                    Console.WriteLine("Loading Props 4");
                     loader.LoadedAssetsForFiltering.Add(name);
                     return false;
                 },
@@ -283,6 +297,7 @@ public partial class AssetsViewModel : ViewModelBase
                 },
                 HidePredicate = (loader, asset, name) =>
                 {
+                    Console.WriteLine("Loading Prefabs");
                     var tagsHelper = asset.GetOrDefault<FStructFallback?>("CreativeTagsHelper");
                     if (tagsHelper is null) return false;
 
@@ -298,6 +313,7 @@ public partial class AssetsViewModel : ViewModelBase
                 Filters = new[] { "_Harvest", "Weapon_Pickaxe_", "Weapons_Pickaxe_", "Dev_WID" },
                 HidePredicate = (loader, asset, name) =>
                 {
+                    Console.WriteLine("Loading Items");
                     if (!AppSettings.Current.FilterItems) return false;
                     var path = asset.GetPathName();
                     var mappings = AppSettings.Current.ItemMeshMappings.GetOrAdd(name, () => new Dictionary<string, string>());
@@ -393,6 +409,7 @@ public partial class AssetsViewModel : ViewModelBase
                     loader.Total = entries.Length;
                     foreach (var data in entries)
                     {
+                        Console.WriteLine("Loading Wildlife");
                         await TaskService.RunDispatcherAsync(() => loader.Source.Add(new AssetItem(data.Mesh, data.PreviewImage, data.Name, loader.Type, hideRarity: true)), DispatcherPriority.Background);
                         loader.Loaded++;
                     }
@@ -405,10 +422,11 @@ public partial class AssetsViewModel : ViewModelBase
                 {
                     var weaponModTable = await CUE4ParseVM.Provider.LoadObjectAsync<UDataTable>("WeaponMods/DataTables/WeaponModOverrideData");
                     var assets = CUE4ParseVM.AssetRegistry.Where(data => loader.Classes.Contains(data.AssetClass.Text)).ToList();
-
+                    Console.WriteLine("Loading Weapon Mods");
                     loader.Total = assets.Count;
                     foreach (var data in assets)
                     {
+                        Console.WriteLine("Loading Weapon Mods 2", data.ObjectPath);
                         await loader.Pause.WaitIfPaused();
                         try
                         {
@@ -482,17 +500,22 @@ public partial class AssetsViewModel : ViewModelBase
             },
         };
 
-        SetLoader(EAssetType.Outfit);
-        TaskService.Run(async () => { await CurrentLoader!.Load(); });
+        SetLoader(EAssetType.Toy);
+        TaskService.Run(async () => { 
+            await CurrentLoader!.Load(); 
+            Console.WriteLine("tASK FAILED SUCCESSFOOOLY");
+        });
     }
 
     public void SetLoader(EAssetType assetType)
     {
+        Console.WriteLine("Setting loader");
         CurrentLoader = Loaders.First(x => x.Type == assetType);
         ActiveCollection = CurrentLoader.Target;
         SearchFilter = CurrentLoader.SearchFilter;
         CurrentAssetType = assetType;
         CurrentAssets.Clear();
+        Console.WriteLine("Cleaning Current Assets");
     }
 
     public void ModifyFilters(string tag, bool enable)
@@ -515,9 +538,55 @@ public partial class AssetsViewModel : ViewModelBase
         foreach (var currentAsset in CurrentAssets) currentAsset.AssetItem.Favorite();
     }
 
+    // Example method that gets called when a specific collection is loaded or a condition is met
+    private void AutoSelectAssetsAndExport()
+    {
+        Console.WriteLine("AutoSelectAssetsAndExport method started.");
+
+        if (CurrentAssetType == EAssetType.Toy)
+        {
+            Console.WriteLine("CurrentAssetType is Toy.");
+
+            CurrentAssets.Clear();
+            Console.WriteLine("CurrentAssets cleared.");
+
+            foreach (var asset in ActiveCollection)
+            {
+                // Add logic to filter assets if needed
+                var assetOptions = new AssetOptions(asset);
+                CurrentAssets.Add(assetOptions);
+                Console.WriteLine($"Processing asset: {asset.DisplayName}");
+            }
+
+            // Optionally, check if any assets were selected
+            if (CurrentAssets.Any())
+            {
+                Console.WriteLine("CurrentAssets contains items. Executing export command.");
+
+                // Trigger the export automatically
+                // ExportCommand.Execute(null); 
+            }
+            else
+            {
+                Console.WriteLine("No assets selected. Export command not executed.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("CurrentAssetType is not Toy. Method execution ended.");
+        }
+
+        Console.WriteLine("AutoSelectAssetsAndExport method ended.");
+    }
+
+
     [RelayCommand]
     public async Task Export()
     {
+        Console.WriteLine("Exporting");
+        AutoSelectAssetsAndExport();
+        // Console.WriteLine("Current  Assets List: ", CurrentAssets.ToList());
+        // Console.WriteLine("Current  Assets List: ", CurrentAssets.ToList());
         ExportChunks = 1;
         ExportProgress = 0;
         IsExporting = true;
@@ -653,9 +722,10 @@ public partial class AssetLoader : ObservableObject
 
     private async Task LoadAsset(FAssetData data)
     {
+        Console.WriteLine("Loading Asset");
         var asset = await CUE4ParseVM.Provider.TryLoadObjectAsync(data.ObjectPath);
         if (asset is null) return;
-
+        Console.WriteLine("Asset Loaded", data.AssetName.Text);
         var displayName = data.AssetName.Text;
         if (data.TagsAndValues.TryGetValue("DisplayName", out var displayNameRaw)) displayName = displayNameRaw.SubstringBeforeLast('"').SubstringAfterLast('"').Trim();
 
@@ -665,7 +735,7 @@ public partial class AssetLoader : ObservableObject
     private async Task LoadAsset(UObject asset, string assetDisplayName)
     {
         Loaded++;
-
+        Console.WriteLine("Load Asset", Loaded);
         var isHiddenAsset = Filters.Any(y => asset.Name.Contains(y, StringComparison.OrdinalIgnoreCase)) || HidePredicate(this, asset, assetDisplayName);
         if (isHiddenAsset && DontLoadHiddenAssets) return;
 
@@ -673,6 +743,7 @@ public partial class AssetLoader : ObservableObject
         if (icon is null) return;
 
         var displayName = DisplayNameHandler(asset)?.Text;
+        Console.WriteLine("Display Name: ", displayName);
         if (string.IsNullOrEmpty(displayName)) displayName = asset.Name;
 
         await TaskService.RunDispatcherAsync(() => Source.Add(new AssetItem(asset, icon, displayName, Type, isHiddenAsset, HideRarity)), DispatcherPriority.Background);

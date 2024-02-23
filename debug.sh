@@ -1,0 +1,1 @@
+dotnet publish FortnitePorting -c Release --no-self-contained -r win-x64 -o "./Release" -p:PublishSingleFile=true -p:DebugType=portable -p:DebugSymbols=true -p:IncludeNativeLibrariesForSelfExtract=true
