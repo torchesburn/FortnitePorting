@@ -268,19 +268,19 @@ public partial class AssetsViewModel : ViewModelBase
                 Classes = new[] { "FortPlaysetPropItemDefinition" },
                 HidePredicate = (loader, asset, name) =>
                 {
-                    Console.WriteLine("Loading Props");
+                    //ops");
                     if (!AppSettings.Current.FilterProps) return false;
 
                     var path = asset.GetPathName();
-                    Console.WriteLine("Loading Props 2");
+                    //ops 2");
                     if (AppSettings.Current.HiddenPropPaths.Contains(path)) return true;
                     if (loader.LoadedAssetsForFiltering.Contains(name))
                     {
-                        Console.WriteLine("Loading Props 3");
+                        //ops 3");
                         AppSettings.Current.HiddenPropPaths.Add(path);
                         return true;
                     }
-                    Console.WriteLine("Loading Props 4");
+                    //ops 4");
                     loader.LoadedAssetsForFiltering.Add(name);
                     return false;
                 },
@@ -297,7 +297,7 @@ public partial class AssetsViewModel : ViewModelBase
                 },
                 HidePredicate = (loader, asset, name) =>
                 {
-                    Console.WriteLine("Loading Prefabs");
+                    //efabs");
                     var tagsHelper = asset.GetOrDefault<FStructFallback?>("CreativeTagsHelper");
                     if (tagsHelper is null) return false;
 
@@ -500,7 +500,7 @@ public partial class AssetsViewModel : ViewModelBase
             },
         };
 
-        SetLoader(EAssetType.Toy);
+        SetLoader(EAssetType.Prop);
         TaskService.Run(async () => { 
             await CurrentLoader!.Load(); 
             Console.WriteLine("tASK FAILED SUCCESSFOOOLY");
@@ -543,7 +543,7 @@ public partial class AssetsViewModel : ViewModelBase
     {
         Console.WriteLine("AutoSelectAssetsAndExport method started.");
 
-        if (CurrentAssetType == EAssetType.Toy)
+        if (CurrentAssetType == EAssetType.Prop)
         {
             Console.WriteLine("CurrentAssetType is Toy.");
 
@@ -722,10 +722,10 @@ public partial class AssetLoader : ObservableObject
 
     private async Task LoadAsset(FAssetData data)
     {
-        Console.WriteLine("Loading Asset");
+        // Console.WriteLine("Loading Asset");
         var asset = await CUE4ParseVM.Provider.TryLoadObjectAsync(data.ObjectPath);
         if (asset is null) return;
-        Console.WriteLine("Asset Loaded", data.AssetName.Text);
+        // Console.WriteLine("Asset Loaded", data.AssetName.Text);
         var displayName = data.AssetName.Text;
         if (data.TagsAndValues.TryGetValue("DisplayName", out var displayNameRaw)) displayName = displayNameRaw.SubstringBeforeLast('"').SubstringAfterLast('"').Trim();
 
@@ -735,7 +735,7 @@ public partial class AssetLoader : ObservableObject
     private async Task LoadAsset(UObject asset, string assetDisplayName)
     {
         Loaded++;
-        Console.WriteLine("Load Asset", Loaded);
+        // Console.WriteLine("Load Asset", Loaded);
         var isHiddenAsset = Filters.Any(y => asset.Name.Contains(y, StringComparison.OrdinalIgnoreCase)) || HidePredicate(this, asset, assetDisplayName);
         if (isHiddenAsset && DontLoadHiddenAssets) return;
 
